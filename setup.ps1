@@ -46,11 +46,21 @@ Write-Host "`n[2/5] 安装客户端依赖（首次约 5-15 分钟，网络慢时
 Push-Location $ROOT
 try {
     $step2ok = $false
+    # 第一轮：官方源重试 3 次
     for ($i = 1; $i -le 3; $i++) {
         pnpm install --no-frozen-lockfile
         if ($LASTEXITCODE -eq 0) { $step2ok = $true; break }
         Write-Host "  安装失败，10 秒后重试 ($i/3)..." -ForegroundColor Yellow
         Start-Sleep -Seconds 10
+    }
+    # 第二轮：切换国内 npm 镜像再试
+    if (-not $step2ok) {
+        Write-Host "  官方源失败，切换国内镜像（npmmirror）..." -ForegroundColor Yellow
+        for ($i = 1; $i -le 2; $i++) {
+            pnpm install --no-frozen-lockfile --registry=https://registry.npmmirror.com
+            if ($LASTEXITCODE -eq 0) { $step2ok = $true; break }
+            Start-Sleep -Seconds 10
+        }
     }
     if (-not $step2ok) {
         Write-Host "错误：客户端依赖安装失败，请检查网络后重新运行" -ForegroundColor Red
@@ -72,11 +82,21 @@ Write-Host "`n[4/5] 安装插件（含 chat-skin 本地插件）..." -Foreground
 Push-Location $PROFILE_DIR
 try {
     $step4ok = $false
+    # 第一轮：官方源重试 3 次
     for ($i = 1; $i -le 3; $i++) {
         pnpm install --config.minimumReleaseAge=0
         if ($LASTEXITCODE -eq 0) { $step4ok = $true; break }
         Write-Host "  安装失败，10 秒后重试 ($i/3)..." -ForegroundColor Yellow
         Start-Sleep -Seconds 10
+    }
+    # 第二轮：切换国内 npm 镜像再试
+    if (-not $step4ok) {
+        Write-Host "  官方源失败，切换国内镜像（npmmirror）..." -ForegroundColor Yellow
+        for ($i = 1; $i -le 2; $i++) {
+            pnpm install --config.minimumReleaseAge=0 --registry=https://registry.npmmirror.com
+            if ($LASTEXITCODE -eq 0) { $step4ok = $true; break }
+            Start-Sleep -Seconds 10
+        }
     }
     if (-not $step4ok) {
         Write-Host "错误：插件安装失败，请检查网络后重新运行" -ForegroundColor Red
@@ -101,21 +121,36 @@ if (-not $electronDir) {
 $electronExe = Join-Path $electronDir.FullName "node_modules\electron\dist\electron.exe"
 
 # electron 的 postinstall 负责下载运行二进制，网络抖动时可能失败，这里自愈重试
+# （直连失败会自动切换国内镜像，无需 VPN）
 if (-not (Test-Path $electronExe)) {
-    Write-Host "  electron 二进制缺失，正在补装（重试 3 次，有缓存时很快）..." -ForegroundColor Yellow
+    Write-Host "  electron 二进制缺失，正在补装..." -ForegroundColor Yellow
     $installJs = Join-Path $electronDir.FullName "node_modules\electron\install.js"
     $ok = $false
+
+    # 第一轮：直连 GitHub 重试 3 次
+    Write-Host "  方式 1/2：直连 GitHub（3 次）..." -ForegroundColor DarkGray
     for ($i = 1; $i -le 3; $i++) {
-        Write-Host "  尝试 $i/3 ..." -ForegroundColor DarkGray
         node $installJs 2>$null
         if (Test-Path $electronExe) { $ok = $true; break }
         Start-Sleep -Seconds 5
     }
+
+    # 第二轮：走国内镜像（npmmirror）再试 3 次
+    if (-not $ok) {
+        Write-Host "  直连失败，切换国内镜像（npmmirror）..." -ForegroundColor Yellow
+        $env:ELECTRON_MIRROR = "https://npmmirror.com/mirrors/electron/"
+        for ($i = 1; $i -le 3; $i++) {
+            node $installJs 2>$null
+            if (Test-Path $electronExe) { $ok = $true; break }
+            Start-Sleep -Seconds 5
+        }
+        Remove-Item Env:ELECTRON_MIRROR -ErrorAction SilentlyContinue
+    }
+
     if (-not $ok) {
         Write-Host "错误：electron 二进制下载失败（网络问题）。" -ForegroundColor Red
-        Write-Host "请检查网络后重新运行本脚本，或设置镜像环境变量后重试：" -ForegroundColor Yellow
+        Write-Host "请检查网络后重新运行本脚本，或手动设置镜像环境变量后重试：" -ForegroundColor Yellow
         Write-Host "  `$env:ELECTRON_MIRROR='https://npmmirror.com/mirrors/electron/'" -ForegroundColor Yellow
-        Write-Host "然后重新运行 install.bat"
         Read-Host "按回车退出"; exit 1
     }
 }
