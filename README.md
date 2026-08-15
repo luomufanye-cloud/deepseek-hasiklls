@@ -43,15 +43,13 @@ DeepSeek Harness 客户端 + 全套美化插件，开箱即用。包含：二次
 ## 第二步：一键安装（Windows）
 
 1. 下载本仓库压缩包（Code → Download ZIP），解压到任意目录（路径不要含中文）
-2. 双击运行 **`setup.ps1`**（若提示安全警告，选「仍要运行」；或在 PowerShell 中执行 `./setup.ps1`）
+2. **双击运行 `install.bat`**（推荐，双击即装；若系统中文兼容有问题就用 `一键安装.bat`）
 3. 脚本会自动完成：装 pnpm → 装客户端依赖 → 恢复插件配置 → 装插件 → 启动客户端（首次约 5-15 分钟，取决于网络）
 4. 客户端窗口自动打开
 
-> 如果右键没有「使用 PowerShell 运行」，可以先打开 PowerShell，`cd` 到解压目录后执行：
-> ```powershell
-> Set-ExecutionPolicy -Scope Process Bypass; ./setup.ps1
-> ```
-> 若提示需要权限，请以**管理员身份**运行 PowerShell（pnpm 全局安装需要）。
+> 双击 `.bat` 是最省事的方式（Windows 允许双击 `.bat`，但双击 `.ps1` 不会执行）。
+> 若双击 `.bat` 弹出安全警告，点「更多信息 → 仍要运行」。
+> 若提示需要权限，请以**管理员身份**运行（右键 .bat → 以管理员身份运行，pnpm 全局安装需要）。
 
 ## 使用说明
 
