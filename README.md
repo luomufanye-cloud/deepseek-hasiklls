@@ -20,20 +20,38 @@ DeepSeek Harness 客户端 + 全套美化插件，开箱即用。包含：二次
 ## 环境要求
 
 - **Windows 10/11**
-- **Node.js 20+**：<https://nodejs.org/>（未安装时脚本会自动装 pnpm，但 Node 必须手动装）
+- **Node.js 20+**（需手动安装，见下文）
 - 无需预装 pnpm / git（脚本自动处理）
 
-## 一键安装（Windows）
+## 第一步：安装 Node.js（必须手动装，一次性）
+
+> 脚本**不会**自动安装 Node.js，必须手动装一次。Node.js 是后续一切的基础。
+
+1. 打开 <https://nodejs.org/>，下载 **LTS 版**（绿色按钮，Windows Installer 即 `.msi` 文件）
+2. 双击下载的 `.msi` 安装包，一路「下一步」即可（默认选项即可，无需改动）
+3. 装完后**关闭所有已打开的 PowerShell/终端窗口**，重新开一个，输入以下命令验证：
+   ```
+   node --version
+   ```
+   出现类似 `v22.x.x` 的输出即安装成功（若提示"不是内部或外部命令"，重启电脑后再试）
+
+> 其它安装方式（任选其一）：
+> - 微软商店：搜索「Node.js LTS」点安装
+> - winget 命令：`winget install OpenJS.NodeJS.LTS`
+> - 如果你电脑上已经有任何可用的 Node.js（其他软件自带），可跳过此步，脚本会自动检测
+
+## 第二步：一键安装（Windows）
 
 1. 下载本仓库压缩包（Code → Download ZIP），解压到任意目录（路径不要含中文）
 2. 双击运行 **`setup.ps1`**（若提示安全警告，选「仍要运行」；或在 PowerShell 中执行 `./setup.ps1`）
-3. 等待脚本完成（首次安装约 5-15 分钟，取决于网络）
+3. 脚本会自动完成：装 pnpm → 装客户端依赖 → 恢复插件配置 → 装插件 → 启动客户端（首次约 5-15 分钟，取决于网络）
 4. 客户端窗口自动打开
 
 > 如果右键没有「使用 PowerShell 运行」，可以先打开 PowerShell，`cd` 到解压目录后执行：
 > ```powershell
 > Set-ExecutionPolicy -Scope Process Bypass; ./setup.ps1
 > ```
+> 若提示需要权限，请以**管理员身份**运行 PowerShell（pnpm 全局安装需要）。
 
 ## 使用说明
 

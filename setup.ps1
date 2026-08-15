@@ -20,8 +20,14 @@ function Test-Cmd([string]$name, [string]$probe) {
 # ---------- 1. 检查环境 ----------
 Write-Host "`n[1/5] 检查环境..." -ForegroundColor Yellow
 if (-not (Test-Cmd "node" { node --version })) {
-    Write-Host "未检测到 Node.js！请先安装 Node.js 20+ (https://nodejs.org/)" -ForegroundColor Red
-    Write-Host "安装后重新运行本脚本。"
+    Write-Host "未检测到 Node.js！" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "请先手动安装 Node.js 20+（脚本不会自动安装）：" -ForegroundColor Yellow
+    Write-Host "  1. 打开 https://nodejs.org/ 下载 LTS 版 (.msi)"
+    Write-Host "  2. 双击安装包，一路下一步"
+    Write-Host "  3. 重开一个 PowerShell，运行 node --version 验证"
+    Write-Host "  4. 装好后重新运行本脚本"
+    Write-Host ""
     Read-Host "按回车退出"; exit 1
 }
 $nodeVer = node --version
