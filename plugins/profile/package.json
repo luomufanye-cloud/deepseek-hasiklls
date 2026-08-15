@@ -1,0 +1,29 @@
+{
+  "name": "dsh-profile-web",
+  "private": true,
+  "dependencies": {
+    "@dsh-external/dsh-visualize": "github:Nagi-ovo/dsh-visualize",
+    "@linxin666/dsh-web-ui-all": "^0.1.15",
+    "@liustack/modlens": "3.16.6",
+    "@omdsh-dev/dsh-genui": "github:omdsh-dev/dsh-genui",
+    "dsh-better-sidebar": "git+https://github.com/omdsh-dev/DSH-better-sidebar.git",
+    "dsh-dream-skin": "^0.2.5",
+    "forkprobe-dsh": "github:Jayden-X-L/forkprobe",
+    "node-pty": "^1.1.0"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "@linxin666/dsh-web-ui-all",
+        "@dsh-external/dsh-visualize",
+        "@omdsh-dev/dsh-genui",
+        "@liustack/modlens",
+        "dsh-better-sidebar",
+        "forkprobe-dsh",
+        "dsh-dream-skin"
+      ]
+    }
+  }
+}

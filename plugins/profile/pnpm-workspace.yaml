@@ -1,0 +1,20 @@
+﻿packages:
+  - .
+
+nodeLinker: hoisted
+autoInstallPeers: false
+
+minimumReleaseAgeExclude:
+  - '@linxin666/*'
+  - dsh-better-sidebar
+  - '@liustack/modlens'
+  - dsh-dream-skin@0.2.5
+
+allowBuilds:
+  cloudflared: true
+  cpu-features: true
+  ssh2: true
+  node-pty: true
+  protobufjs: true
+  'dsh-better-sidebar@git+https://github.com/omdsh-dev/DSH-better-sidebar.git': true
+
