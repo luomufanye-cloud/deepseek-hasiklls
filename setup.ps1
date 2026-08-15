@@ -1,4 +1,4 @@
-# DeepSeek Harness 美化版 一键安装脚本 (Windows PowerShell)
+﻿# DeepSeek Harness 美化版 一键安装脚本 (Windows PowerShell)
 # 用法：右键 → 使用 PowerShell 运行；或在该目录下执行 ./setup.ps1
 # 功能：安装客户端依赖 + 恢复全部美化插件 + 启动客户端
 $ErrorActionPreference = "Stop"
@@ -13,13 +13,14 @@ Write-Host "==================================================" -ForegroundColor
 Write-Host "项目目录 : $ROOT"
 Write-Host "DSH 目录  : $DSH_HOME"
 
-function Test-Cmd([string]$name, [string]$probe) {
-    try { $null = & $probe 2>$null; return $true } catch { return $false }
+function Test-Cmd([string]$cmd) {
+    $found = Get-Command $cmd -ErrorAction SilentlyContinue
+    return [bool]$found
 }
 
 # ---------- 1. 检查环境 ----------
 Write-Host "`n[1/5] 检查环境..." -ForegroundColor Yellow
-if (-not (Test-Cmd "node" { node --version })) {
+if (-not (Test-Cmd "node")) {
     Write-Host "未检测到 Node.js！" -ForegroundColor Red
     Write-Host ""
     Write-Host "请先手动安装 Node.js 20+（脚本不会自动安装）：" -ForegroundColor Yellow
@@ -33,7 +34,7 @@ if (-not (Test-Cmd "node" { node --version })) {
 $nodeVer = node --version
 Write-Host "  Node.js: $nodeVer"
 
-if (-not (Test-Cmd "pnpm" { pnpm --version })) {
+if (-not (Test-Cmd "pnpm")) {
     Write-Host "  pnpm 未安装，正在安装..." -ForegroundColor Yellow
     npm install -g pnpm
 }
@@ -41,10 +42,20 @@ $pnpmVer = pnpm --version
 Write-Host "  pnpm: $pnpmVer"
 
 # ---------- 2. 安装客户端依赖 ----------
-Write-Host "`n[2/5] 安装客户端依赖（首次约 5-15 分钟）..." -ForegroundColor Yellow
+Write-Host "`n[2/5] 安装客户端依赖（首次约 5-15 分钟，网络慢时更久）..." -ForegroundColor Yellow
 Push-Location $ROOT
 try {
-    pnpm install --no-frozen-lockfile
+    $step2ok = $false
+    for ($i = 1; $i -le 3; $i++) {
+        pnpm install --no-frozen-lockfile
+        if ($LASTEXITCODE -eq 0) { $step2ok = $true; break }
+        Write-Host "  安装失败，10 秒后重试 ($i/3)..." -ForegroundColor Yellow
+        Start-Sleep -Seconds 10
+    }
+    if (-not $step2ok) {
+        Write-Host "错误：客户端依赖安装失败，请检查网络后重新运行" -ForegroundColor Red
+        Read-Host "按回车退出"; exit 1
+    }
 } finally { Pop-Location }
 
 # ---------- 3. 恢复插件配置 ----------
@@ -60,7 +71,17 @@ Copy-Item (Join-Path $pluginSrc "cordis.patch.yml") $PROFILE_DIR -Force
 Write-Host "`n[4/5] 安装插件（含 chat-skin 本地插件）..." -ForegroundColor Yellow
 Push-Location $PROFILE_DIR
 try {
-    pnpm install --config.minimumReleaseAge=0
+    $step4ok = $false
+    for ($i = 1; $i -le 3; $i++) {
+        pnpm install --config.minimumReleaseAge=0
+        if ($LASTEXITCODE -eq 0) { $step4ok = $true; break }
+        Write-Host "  安装失败，10 秒后重试 ($i/3)..." -ForegroundColor Yellow
+        Start-Sleep -Seconds 10
+    }
+    if (-not $step4ok) {
+        Write-Host "错误：插件安装失败，请检查网络后重新运行" -ForegroundColor Red
+        Read-Host "按回车退出"; exit 1
+    }
     # chat-skin 是本地插件（未发布 npm），直接复制 + 写入 patch
     $csSrc = Join-Path $ROOT "plugins\dsh-client-chat-skin"
     $csDst = Join-Path $PROFILE_DIR "node_modules\dsh-client-chat-skin"
@@ -71,11 +92,39 @@ try {
 } finally { Pop-Location }
 
 # ---------- 5. 启动客户端 ----------
-Write-Host "`n[5/5] 启动客户端..." -ForegroundColor Yellow
+Write-Host "`n[5/5] 准备客户端运行环境..." -ForegroundColor Yellow
+$electronDir = Get-ChildItem (Join-Path $ROOT "node_modules\.pnpm") -Directory -Filter "electron@*" -ErrorAction SilentlyContinue | Select-Object -First 1
+if (-not $electronDir) {
+    Write-Host "错误：未找到 electron，请检查第 2 步是否成功" -ForegroundColor Red
+    Read-Host "按回车退出"; exit 1
+}
+$electronExe = Join-Path $electronDir.FullName "node_modules\electron\dist\electron.exe"
+
+# electron 的 postinstall 负责下载运行二进制，网络抖动时可能失败，这里自愈重试
+if (-not (Test-Path $electronExe)) {
+    Write-Host "  electron 二进制缺失，正在补装（重试 3 次，有缓存时很快）..." -ForegroundColor Yellow
+    $installJs = Join-Path $electronDir.FullName "node_modules\electron\install.js"
+    $ok = $false
+    for ($i = 1; $i -le 3; $i++) {
+        Write-Host "  尝试 $i/3 ..." -ForegroundColor DarkGray
+        node $installJs 2>$null
+        if (Test-Path $electronExe) { $ok = $true; break }
+        Start-Sleep -Seconds 5
+    }
+    if (-not $ok) {
+        Write-Host "错误：electron 二进制下载失败（网络问题）。" -ForegroundColor Red
+        Write-Host "请检查网络后重新运行本脚本，或设置镜像环境变量后重试：" -ForegroundColor Yellow
+        Write-Host "  `$env:ELECTRON_MIRROR='https://npmmirror.com/mirrors/electron/'" -ForegroundColor Yellow
+        Write-Host "然后重新运行 install.bat"
+        Read-Host "按回车退出"; exit 1
+    }
+}
+
+Write-Host "  启动客户端..." -ForegroundColor Yellow
 Write-Host "提示：首次启动稍慢，稍等窗口出现。浏览器会打开 http://127.0.0.1:端口" -ForegroundColor DarkGray
 Push-Location (Join-Path $ROOT "apps\desktop")
 try {
-    & (Join-Path $ROOT "node_modules\.pnpm\electron@*\node_modules\electron\dist\electron.exe") "." 2>$null
+    & $electronExe "." 2>$null
 } finally { Pop-Location }
 
 Write-Host "`n安装完成！皮肤入口：设置 → 外观（Mirage 皮肤 / 壁纸）· 皮肤中心（鲸吟/夕港）· 右下角 🎨（聊天壁纸）" -ForegroundColor Green
